@@ -3,11 +3,9 @@ package ru.practicum.shareit.user;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
 @Data
-public class User {
+public class NewUserRequest {
     private Long id;
 
     private String name;
@@ -20,4 +18,18 @@ public class User {
 
     @Past(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
+
+
+
+    public boolean hasName() {
+        return name != null && !name.isEmpty();
+    }
+
+    public boolean hasLogin() {
+        return login != null && !login.isBlank();
+    }
+
+    public boolean hasBirthday() {
+        return birthday != null;
+    }
 }
