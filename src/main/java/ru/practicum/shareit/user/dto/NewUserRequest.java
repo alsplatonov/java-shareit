@@ -1,4 +1,4 @@
-package ru.practicum.shareit.user;
+package ru.practicum.shareit.user.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -18,8 +18,6 @@ public class NewUserRequest {
 
     @Past(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
-
-
 
     public boolean hasName() {
         return name != null && !name.isEmpty();

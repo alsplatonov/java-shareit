@@ -48,13 +48,11 @@ public class ErrorHandler {
     public ErrorResponse handleConflict(ConflictException e) {
         return new ErrorResponse(e.getMessage());
     }
-/*
+
     // 500 — всё остальное
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleOther(Throwable e) {
         return new ErrorResponse("Произошла непредвиденная ошибка.");
     }
-
-*/
 }

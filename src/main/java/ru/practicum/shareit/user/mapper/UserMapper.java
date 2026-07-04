@@ -1,7 +1,11 @@
-package ru.practicum.shareit.user;
+package ru.practicum.shareit.user.mapper;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import ru.practicum.shareit.user.dto.NewUserRequest;
+import ru.practicum.shareit.user.dto.UpdateUserRequest;
+import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.model.User;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class UserMapper {
@@ -34,7 +38,9 @@ public final class UserMapper {
         if (request.hasName()) {
             user.setName(request.getName());
         }
+
         user.setEmail(request.getEmail());
+
         if (request.hasLogin()) {
             user.setLogin(request.getLogin());
         }
@@ -42,6 +48,7 @@ public final class UserMapper {
         if (request.hasBirthday()) {
             user.setBirthday(request.getBirthday());
         }
+
         return user;
     }
 }

@@ -1,4 +1,4 @@
-package ru.practicum.shareit.user;
+package ru.practicum.shareit.user.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -7,7 +7,6 @@ import java.time.LocalDate;
 
 @Data
 public class UpdateUserRequest {
-
     @NotNull(message = "id не может быть пустым")
     private Long id;
 
