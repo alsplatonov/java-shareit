@@ -59,4 +59,10 @@ public class UserRepositoryImpl implements UserRepository {
         User user = users.remove(id);
         return Optional.ofNullable(user);
     }
+
+    @Override
+    public void clear() {
+        users.clear();
+        idCounter = 1L;
+    }
 }

@@ -1,6 +1,5 @@
 package ru.practicum.shareit.item.dao;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.model.Item;
@@ -56,5 +55,11 @@ public class ItemRepositoryImpl implements ItemRepository {
     public Optional<Item> remove(Long id) {
         Item removedItem = items.remove(id);
         return Optional.ofNullable(removedItem);
+    }
+
+    @Override
+    public void clear() {
+        items.clear();
+        idCounter = 1L;
     }
 }

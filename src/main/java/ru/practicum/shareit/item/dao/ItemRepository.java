@@ -17,4 +17,6 @@ public interface ItemRepository {
     Item update(Item item);
 
     Optional<Item> remove(Long id);
+
+    void clear();
 }
