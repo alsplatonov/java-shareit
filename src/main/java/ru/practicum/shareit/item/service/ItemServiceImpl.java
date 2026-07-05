@@ -60,7 +60,7 @@ public class ItemServiceImpl implements ItemService {
             throw new NotFoundException("Редактировать может только владелец");
         }
 
-        ItemMapper.updateItemFields(item, request);
+        updateItemFields(item, request);
 
         Item updatedItem = itemRepository.update(item);
 
@@ -119,19 +119,27 @@ public class ItemServiceImpl implements ItemService {
             return List.of();
         }
 
-        String lowerText = text.toLowerCase();
-
-        List<ItemDto> result = itemRepository.findAll().stream()
-                .filter(Item::isAvailable)
-                .filter(item ->
-                        item.getName().toLowerCase().contains(lowerText) ||
-                                item.getDescription().toLowerCase().contains(lowerText)
-                )
+        List<ItemDto> result = itemRepository.search(text).stream()
                 .map(ItemMapper::mapToItemDto)
-                .collect(Collectors.toList());
+                .toList();
 
         log.info("Поиск завершён, найдено {} вещей по запросу='{}'", result.size(), text);
 
         return result;
+    }
+
+    public static Item updateItemFields(Item item, UpdateItemRequest request) {
+        if (request.hasName()) {
+            item.setName(request.getName());
+        }
+
+        if (request.hasDescription()) {
+            item.setDescription(request.getDescription());
+        }
+
+        if (request.hasAvailable()) {
+            item.setAvailable(request.getAvailable());
+        }
+        return item;
     }
 }

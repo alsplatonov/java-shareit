@@ -65,7 +65,7 @@ public class UserServiceImpl implements UserService {
                     });
         }
 
-        UserMapper.updateUserFields(user, request);
+        updateUserFields(user, request);
 
         User updatedUser = userRepository.update(user);
 
@@ -120,5 +120,23 @@ public class UserServiceImpl implements UserService {
         }
 
         return result;
+    }
+
+    public static User updateUserFields(User user, UpdateUserRequest request) {
+        if (request.hasName()) {
+            user.setName(request.getName());
+        }
+
+        user.setEmail(request.getEmail());
+
+        if (request.hasLogin()) {
+            user.setLogin(request.getLogin());
+        }
+
+        if (request.hasBirthday()) {
+            user.setBirthday(request.getBirthday());
+        }
+
+        return user;
     }
 }

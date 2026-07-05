@@ -3,10 +3,8 @@ package ru.practicum.shareit.item.dao;
 import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.model.Item;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
@@ -55,6 +53,19 @@ public class ItemRepositoryImpl implements ItemRepository {
     public Optional<Item> remove(Long id) {
         Item removedItem = items.remove(id);
         return Optional.ofNullable(removedItem);
+    }
+
+    @Override
+    public List<Item> search(String text) {
+        String lowerText = text.toLowerCase();
+
+        return items.values().stream()
+                .filter(Item::isAvailable)
+                .filter(item ->
+                        item.getName().toLowerCase().contains(lowerText) ||
+                                item.getDescription().toLowerCase().contains(lowerText)
+                )
+                .collect(Collectors.toList());
     }
 
     @Override

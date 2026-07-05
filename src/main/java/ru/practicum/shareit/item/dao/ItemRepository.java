@@ -2,6 +2,7 @@ package ru.practicum.shareit.item.dao;
 
 import ru.practicum.shareit.item.model.Item;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface ItemRepository {
@@ -17,6 +18,8 @@ public interface ItemRepository {
     Item update(Item item);
 
     Optional<Item> remove(Long id);
+
+    List<Item> search(String text);
 
     void clear();
 }
