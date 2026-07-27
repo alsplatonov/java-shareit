@@ -3,9 +3,8 @@ package ru.practicum.shareit.item.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.NewItemRequest;
-import ru.practicum.shareit.item.dto.UpdateItemRequest;
+import ru.practicum.shareit.RequestUtil;
+import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.item.service.ItemService;
 
 import java.util.List;
@@ -33,14 +32,16 @@ public class ItemController {
             @PathVariable Long itemId,
             @Valid @RequestBody UpdateItemRequest request
     ) {
-        request.setId(itemId);
-        return itemService.update(userId, request);
+        return itemService.update(userId, itemId, request);
     }
 
     //Получить вещь по id
     @GetMapping("/{itemId}")
-    public ItemDto findById(@PathVariable Long itemId) {
-        return itemService.findById(itemId);
+    public ItemDto findById(
+            @RequestHeader(RequestUtil.USER_HEADER_ID) Long userId,
+            @PathVariable Long itemId
+    ) {
+        return itemService.findById(userId, itemId);
     }
 
     //Получить все вещи владельца
@@ -57,5 +58,14 @@ public class ItemController {
             @RequestParam String text
     ) {
         return itemService.search(text);
+    }
+
+    @PostMapping("/{itemId}/comment")
+    public CommentDto addComment(
+            @RequestHeader(RequestUtil.USER_HEADER_ID) Long userId,
+            @PathVariable Long itemId,
+            @Valid @RequestBody NewCommentRequest request
+    ) {
+        return itemService.addComment(userId, itemId, request);
     }
 }

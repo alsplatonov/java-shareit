@@ -16,15 +16,6 @@ public class UpdateUserRequest {
     @NotBlank(message = "Email не может быть пустым")
     private String email;
 
-    private String login;
-
-    @Past(message = "Дата рождения не может быть в будущем")
-    private LocalDate birthday;
-
-    public boolean hasLogin() {
-        return login != null && !login.isBlank();
-    }
-
     public boolean hasName() {
         return name != null && !name.isEmpty();
     }
@@ -33,7 +24,4 @@ public class UpdateUserRequest {
         return email != null && !email.isBlank();
     }
 
-    public boolean hasBirthday() {
-        return birthday != null;
-    }
 }
