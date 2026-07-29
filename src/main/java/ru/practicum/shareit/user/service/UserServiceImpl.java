@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService {
                 });
 
         User user = UserMapper.mapToUser(request);
-        User savedUser = userRepository.create(user);
+        User savedUser = userRepository.save(user);
 
         log.info("Пользователь успешно создан с id={}", savedUser.getId());
 
@@ -67,7 +67,7 @@ public class UserServiceImpl implements UserService {
 
         updateUserFields(user, request);
 
-        User updatedUser = userRepository.update(user);
+        User updatedUser = userRepository.save(user);
 
         log.info("Пользователь id={} успешно обновлён", updatedUser.getId());
 
@@ -110,16 +110,16 @@ public class UserServiceImpl implements UserService {
     public Optional<UserDto> remove(Long id) {
         log.info("Удаление пользователя id={}", id);
 
-        Optional<UserDto> result = userRepository.remove(id)
-                .map(UserMapper::mapToUserDto);
-
-        if (result.isPresent()) {
+        Optional<User> user = userRepository.findById(id);
+        if (user.isPresent()) {
+            userRepository.deleteById(id);
             log.info("Пользователь id={} успешно удалён", id);
+
+            return Optional.of(UserMapper.mapToUserDto(user.get()));
         } else {
             log.warn("Попытка удаления несуществующего пользователя id={}", id);
+            return Optional.empty();
         }
-
-        return result;
     }
 
     public static User updateUserFields(User user, UpdateUserRequest request) {
@@ -127,14 +127,8 @@ public class UserServiceImpl implements UserService {
             user.setName(request.getName());
         }
 
-        user.setEmail(request.getEmail());
-
-        if (request.hasLogin()) {
-            user.setLogin(request.getLogin());
-        }
-
-        if (request.hasBirthday()) {
-            user.setBirthday(request.getBirthday());
+        if (request.hasEmail()) {
+            user.setEmail(request.getEmail());
         }
 
         return user;

@@ -3,6 +3,7 @@ package ru.practicum.shareit.user.mapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import ru.practicum.shareit.user.dto.NewUserRequest;
+import ru.practicum.shareit.user.dto.UserBaseDto;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
 
@@ -14,12 +15,7 @@ public final class UserMapper {
             user.setEmail(request.getEmail());
         }
         user.setName(request.getName());
-        if (request.hasLogin()) {
-            user.setLogin(request.getLogin());
-        }
-        if (request.hasBirthday()) {
-            user.setBirthday(request.getBirthday());
-        }
+
         return user;
     }
 
@@ -27,9 +23,17 @@ public final class UserMapper {
         UserDto dto = new UserDto();
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());
-        dto.setLogin(user.getLogin());
         dto.setName(user.getName());
-        dto.setBirthday(user.getBirthday());
+        return dto;
+    }
+
+    public static UserBaseDto mapToUserBaseDto(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserBaseDto dto = new UserBaseDto();
+        dto.setId(user.getId());
+        dto.setName(user.getName());
         return dto;
     }
 }
