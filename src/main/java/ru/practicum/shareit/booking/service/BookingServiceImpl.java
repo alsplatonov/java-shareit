@@ -46,28 +46,10 @@ public class BookingServiceImpl implements BookingService {
                     return new NotFoundException("Вещь не найдена");
                 });
 
-        // нельзя бронировать свою вещь
-        if (item.getOwner().getId().equals(userId)) {
-            log.warn("Пользователь id={} попытался забронировать свою же вещь id={}", userId, item.getId());
-            throw new ConflictException("Нельзя бронировать свою вещь");
-        }
-
-        // вещь должна быть доступна
-        if (!item.isAvailable()) {
-            log.warn("Вещь id={} недоступна для бронирования", item.getId());
-            throw new ValidationException("Вещь недоступна для бронирования");
-        }
-
-        // валидация дат
-        if (request.getStart() == null || request.getEnd() == null) {
-            log.warn("Не указаны даты бронирования: start={}, end={}", request.getStart(), request.getEnd());
-            throw new ConflictException("Дата начала и окончания обязательны");
-        }
-
-        if (!request.getEnd().isAfter(request.getStart())) {
-            log.warn("Некорректные даты бронирования: start={}, end={}", request.getStart(), request.getEnd());
-            throw new ConflictException("Дата окончания должна быть позже даты начала");
-        }
+        //валидация
+        validateNotOwnItem(userId, item);
+        validateItemAvailable(item);
+        validateBookingDates(request);
 
         // создаём через маппер (status из request игнорируем)
         Booking booking = BookingMapper.mapToBooking(request, item, booker);
@@ -228,5 +210,26 @@ public class BookingServiceImpl implements BookingService {
             default -> bookingRepository
                     .findByItemOwnerIdOrderByStartDesc(userId);
         };
+    }
+
+    private void validateNotOwnItem(Long userId, Item item) {
+        if (item.getOwner().getId().equals(userId)) {
+            log.warn("Пользователь id={} попытался забронировать свою же вещь id={}", userId, item.getId());
+            throw new ConflictException("Нельзя бронировать свою вещь");
+        }
+    }
+
+    private void validateItemAvailable(Item item) {
+        if (!item.isAvailable()) {
+            log.warn("Вещь id={} недоступна для бронирования", item.getId());
+            throw new ValidationException("Вещь недоступна для бронирования");
+        }
+    }
+
+    private void validateBookingDates(NewBookingRequest request) {
+        if (!request.getEnd().isAfter(request.getStart())) {
+            log.warn("Некорректные даты бронирования: start={}, end={}", request.getStart(), request.getEnd());
+            throw new ConflictException("Дата окончания должна быть позже даты начала");
+        }
     }
 }

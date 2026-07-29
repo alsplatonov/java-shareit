@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dao.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingBaseDto;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
+import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -155,24 +157,18 @@ public class ItemServiceImpl implements ItemService {
                 ));
 
         // 1 запрос на все "последние" бронирования сразу
-        Map<Long, BookingBaseDto> lastBookingByItemId = bookingRepository
-                .findByItemIdInAndStartBeforeAndStatusOrderByItemIdAscStartDesc(itemIds, now, Status.APPROVED)
-                .stream()
-                .collect(Collectors.toMap(
-                        booking -> booking.getItem().getId(),
-                        BookingMapper::mapToBookingBaseDto,
-                        (first, second) -> first // после сортировки первая встреченная запись — самая свежая
-                ));
+        Map<Long, BookingBaseDto> lastBookingByItemId = toBookingMap(
+                bookingRepository
+                        .findByItemIdInAndStartBeforeAndStatusOrderByItemIdAscStartDesc(itemIds, now, Status.APPROVED)
+                        .stream()
+        );
 
         // 1 запрос на все "следующие" бронирования сразу
-        Map<Long, BookingBaseDto> nextBookingByItemId = bookingRepository
-                .findByItemIdInAndStartAfterAndStatusOrderByItemIdAscStartAsc(itemIds, now, Status.APPROVED)
-                .stream()
-                .collect(Collectors.toMap(
-                        booking -> booking.getItem().getId(),
-                        BookingMapper::mapToBookingBaseDto,
-                        (first, second) -> first
-                ));
+        Map<Long, BookingBaseDto> nextBookingByItemId = toBookingMap(
+                bookingRepository
+                        .findByItemIdInAndStartAfterAndStatusOrderByItemIdAscStartAsc(itemIds, now, Status.APPROVED)
+                        .stream()
+        );
 
         List<ItemDto> items = ownerItems.stream()
                 .map(item -> ItemMapper.mapToItemDto(
@@ -198,9 +194,8 @@ public class ItemServiceImpl implements ItemService {
         }
 
         List<ItemDto> result = itemRepository
-                .findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(text,text)
+                .searchAvailableByText(text)
                 .stream()
-                .filter(Item::isAvailable)
                 .map(ItemMapper::mapToItemDto)
                 .toList();
 
@@ -225,11 +220,10 @@ public class ItemServiceImpl implements ItemService {
                     return new NotFoundException("Вещь не найдена");
                 });
 
-        boolean hasBooked = !bookingRepository
-                .findByBookerIdAndItemIdAndStatusAndEndBefore(
+        boolean hasBooked = bookingRepository
+                .existsByBookerIdAndItemIdAndStatusAndEndBefore(
                         userId, itemId, Status.APPROVED, LocalDateTime.now()
-                )
-                .isEmpty();
+                );
 
         if (!hasBooked) {
             log.warn("Пользователь id={} не может оставить отзыв на вещь id={}: аренда не найдена",
@@ -260,5 +254,13 @@ public class ItemServiceImpl implements ItemService {
             item.setAvailable(request.getAvailable());
         }
         return item;
+    }
+
+    private Map<Long, BookingBaseDto> toBookingMap(Stream<Booking> stream) {
+        return stream.collect(Collectors.toMap(
+                booking -> booking.getItem().getId(),
+                BookingMapper::mapToBookingBaseDto,
+                (first, second) -> first
+        ));
     }
 }
