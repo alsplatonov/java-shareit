@@ -8,18 +8,20 @@ import ru.practicum.shareit.item.dto.ItemBaseDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.NewItemRequest;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ItemMapper {
-    public static Item mapToItem(NewItemRequest request, User owner) {
+    public static Item mapToItem(NewItemRequest request, User owner, ItemRequest itemRequest) {
         Item item = new Item();
         item.setName(request.getName());
         item.setDescription(request.getDescription());
         item.setAvailable(request.getAvailable());
         item.setOwner(owner);
+        item.setRequest(itemRequest);
         return item;
     }
 
@@ -30,6 +32,9 @@ public final class ItemMapper {
         dto.setDescription(item.getDescription());
         dto.setAvailable(item.isAvailable());
         dto.setComments(List.of());
+        if (item.getRequest() != null) {
+            dto.setRequestId(item.getRequest().getId());
+        }
         return dto;
     }
 

@@ -2,6 +2,7 @@ package ru.practicum.shareit.item.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.RequestUtil;
 import ru.practicum.shareit.item.dto.*;
@@ -18,6 +19,7 @@ public class ItemController {
 
     //Создание вещи
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public ItemDto create(
             @RequestHeader(RequestUtil.USER_HEADER_ID) Long userId,
             @Valid @RequestBody NewItemRequest request

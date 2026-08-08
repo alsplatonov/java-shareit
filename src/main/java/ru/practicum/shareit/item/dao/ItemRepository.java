@@ -23,4 +23,8 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
       AND i.available = true
 """)
     List<Item> searchAvailableByText(@Param("text") String text);
+
+    List<Item> findByRequestId(Long requestId);
+
+    List<Item> findByRequestIdInOrderByRequestIdAsc(List<Long> requestIds);
 }
