@@ -1,4 +1,4 @@
-package ru.practicum.shareit.booking.Controller;
+package ru.practicum.shareit.booking.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
