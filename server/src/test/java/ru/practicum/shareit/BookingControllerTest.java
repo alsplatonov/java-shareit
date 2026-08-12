@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -124,6 +125,21 @@ class BookingControllerTest {
         mockMvc.perform(get("/bookings/owner").header(USER_HEADER, 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void getBookingsByCurrentUser_ReturnsListFromService() throws Exception {
+        when(bookingService.findByCurrentUser(1L, State.ALL))
+                .thenReturn(List.of(bookingDto(1L, Status.WAITING)));
+
+        mockMvc.perform(get("/bookings")
+                        .header(USER_HEADER, 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(1L))
+                .andExpect(jsonPath("$[0].status").value("WAITING"));
+
+        verify(bookingService).findByCurrentUser(1L, State.ALL);
     }
 
     private BookingDto bookingDto(Long id, Status status) {

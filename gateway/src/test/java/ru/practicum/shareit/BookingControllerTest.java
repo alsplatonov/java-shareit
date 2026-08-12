@@ -90,6 +90,22 @@ class BookingControllerTest {
     }
 
     @Test
+    void update_ValidRequest_DelegatesToClient() throws Exception {
+        when(bookingClient.update(1L, 2L, true))
+                .thenReturn(ResponseEntity.ok(
+                        Map.of("id", 2L, "status", "APPROVED")
+                ));
+
+        mockMvc.perform(patch("/bookings/{bookingId}", 2L)
+                        .header(USER_HEADER, 1L)
+                        .param("approved", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APPROVED"));
+
+        verify(bookingClient).update(1L, 2L, true);
+    }
+
+    @Test
     void getBookingById_DelegatesToClient() throws Exception {
         when(bookingClient.getBookingById(1L, 2L)).thenReturn(ResponseEntity.ok(Map.of("id", 2)));
 
@@ -97,6 +113,19 @@ class BookingControllerTest {
                 .andExpect(status().isOk());
 
         verify(bookingClient).getBookingById(1L, 2L);
+    }
+
+    @Test
+    void getBookingsByCurrentUser_ValidState_DelegatesToClient() throws Exception {
+        when(bookingClient.getBookingsByCurrentUser(1L, State.ALL))
+                .thenReturn(ResponseEntity.ok(Map.of()));
+
+        mockMvc.perform(get("/bookings")
+                        .header(USER_HEADER, 1L)
+                        .param("state", "ALL"))
+                .andExpect(status().isOk());
+
+        verify(bookingClient).getBookingsByCurrentUser(1L, State.ALL);
     }
 
     @Test

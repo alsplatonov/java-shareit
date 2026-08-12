@@ -2,6 +2,7 @@ package ru.practicum.shareit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -13,9 +14,11 @@ import ru.practicum.shareit.client.ItemClient;
 import ru.practicum.shareit.item.controller.ItemController;
 import ru.practicum.shareit.item.dto.NewCommentRequest;
 import ru.practicum.shareit.item.dto.NewItemRequest;
+import ru.practicum.shareit.item.dto.UpdateItemRequest;
 
 import java.util.Map;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -85,6 +88,46 @@ class ItemControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void update_ValidRequest_DelegatesToClient() throws Exception {
+        UpdateItemRequest request = new UpdateItemRequest();
+        request.setName("Новое имя");
+
+        when(itemClient.update(eq(1L), eq(5L), any(UpdateItemRequest.class)))
+                .thenReturn(ResponseEntity.ok(
+                        Map.of("id", 5L, "name", "Новое имя")
+                ));
+
+        mockMvc.perform(patch("/items/{itemId}", 5L)
+                        .header(USER_HEADER, 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Новое имя"));
+
+        ArgumentCaptor<UpdateItemRequest> captor =
+                ArgumentCaptor.forClass(UpdateItemRequest.class);
+
+        verify(itemClient).update(eq(1L), eq(5L), captor.capture());
+
+        assertThat(captor.getValue().getName())
+                .isEqualTo("Новое имя");
+    }
+
+    @Test
+    void search_ValidText_DelegatesToClient() throws Exception {
+        when(itemClient.search("дрель"))
+                .thenReturn(ResponseEntity.ok(
+                        java.util.List.of(Map.of("id", 1L, "name", "Дрель"))
+                ));
+
+        mockMvc.perform(get("/items/search")
+                        .param("text", "дрель"))
+                .andExpect(status().isOk());
+
+        verify(itemClient).search("дрель");
     }
 
     @Test
