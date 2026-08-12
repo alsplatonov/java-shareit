@@ -5,22 +5,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.shareit.exception.ConflictException;
-import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.client.UserClient;
 import ru.practicum.shareit.user.controller.UserController;
 import ru.practicum.shareit.user.dto.NewUserRequest;
 import ru.practicum.shareit.user.dto.UpdateUserRequest;
-import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.service.UserServiceImpl;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -34,30 +32,45 @@ class UserControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private UserServiceImpl userService;
+    private UserClient userClient;
 
     @Test
-    void create_ValidRequest_ReturnsCreated() throws Exception {
+    void create_ValidRequest_DelegatesToClientAndReturnsItsResponse() throws Exception {
         NewUserRequest request = new NewUserRequest();
         request.setEmail("test@test.com");
-        request.setName("User");
+        request.setName("Test User");
 
-        UserDto response = userDto(1L, "test@test.com", "User");
-        when(userService.create(any())).thenReturn(response);
+        when(userClient.create(any()))
+                .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", 1, "email", "test@test.com")));
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.email").value("test@test.com"));
+
+        verify(userClient).create(any());
     }
 
     @Test
-    void create_InvalidEmail_ReturnsBadRequest() throws Exception {
+    void create_BlankEmail_ReturnsBadRequest_WithoutCallingClient() throws Exception {
+        NewUserRequest request = new NewUserRequest();
+        request.setEmail("");
+        request.setName("Test User");
+
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(userClient);
+    }
+
+    @Test
+    void create_InvalidEmailFormat_ReturnsBadRequest() throws Exception {
         NewUserRequest request = new NewUserRequest();
         request.setEmail("test@");
-        request.setName("User");
+        request.setName("Test User");
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -66,33 +79,12 @@ class UserControllerTest {
     }
 
     @Test
-    void create_EmptyBody_ReturnsBadRequest() throws Exception {
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(""))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void create_DuplicateEmail_ReturnsException() throws Exception {
-        NewUserRequest request = new NewUserRequest();
-        request.setEmail("test@test.com");
-        request.setName("User");
-
-        when(userService.create(any())).thenThrow(new ConflictException("Email уже существует"));
-
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    void update_ValidRequest_ReturnsUpdatedUser() throws Exception {
+    void update_ValidRequest_DelegatesToClientWithCorrectId() throws Exception {
         UpdateUserRequest request = new UpdateUserRequest();
         request.setName("Updated Name");
 
-        when(userService.update(any())).thenReturn(userDto(1L, "test@test.com", "Updated Name"));
+        when(userClient.update(eq(1L), any()))
+                .thenReturn(ResponseEntity.ok(Map.of("id", 1, "name", "Updated Name")));
 
         mockMvc.perform(patch("/users/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -102,26 +94,29 @@ class UserControllerTest {
     }
 
     @Test
-    void findAll_ReturnsList() throws Exception {
-        when(userService.findAll()).thenReturn(List.of(userDto(1L, "user@test.com", "User")));
+    void findAll_DelegatesToClient() throws Exception {
+        when(userClient.findAll()).thenReturn(ResponseEntity.ok(Map.of()));
 
         mockMvc.perform(get("/users"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(status().isOk());
+
+        verify(userClient).findAll();
     }
 
     @Test
-    void findById_ReturnsExistingUser() throws Exception {
-        when(userService.findById(1L)).thenReturn(userDto(1L, "user@test.com", "User"));
+    void findById_DelegatesToClientWithCorrectId() throws Exception {
+        when(userClient.findById(1L)).thenReturn(ResponseEntity.ok(Map.of("id", 1)));
 
         mockMvc.perform(get("/users/{id}", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L));
+                .andExpect(status().isOk());
+
+        verify(userClient).findById(1L);
     }
 
     @Test
-    void findById_UnknownUser_ReturnsNotFound() throws Exception {
-        when(userService.findById(anyLong())).thenThrow(new NotFoundException("Пользователь не найден"));
+    void findById_ServerReturnsNotFound_GatewayPropagatesIt() throws Exception {
+        when(userClient.findById(999L))
+                .thenReturn(ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Пользователь не найден")));
 
         mockMvc.perform(get("/users/{id}", 999L))
                 .andExpect(status().isNotFound())
@@ -129,18 +124,12 @@ class UserControllerTest {
     }
 
     @Test
-    void remove_ExistingUser_ReturnsOk() throws Exception {
-        when(userService.remove(1L)).thenReturn(Optional.of(userDto(1L, "user@test.com", "User")));
+    void remove_DelegatesToClientWithCorrectId() throws Exception {
+        when(userClient.remove(1L)).thenReturn(ResponseEntity.ok().build());
 
         mockMvc.perform(delete("/users/{id}", 1L))
                 .andExpect(status().isOk());
-    }
 
-    private UserDto userDto(Long id, String email, String name) {
-        UserDto dto = new UserDto();
-        dto.setId(id);
-        dto.setEmail(email);
-        dto.setName(name);
-        return dto;
+        verify(userClient).remove(1L);
     }
 }
