@@ -88,6 +88,34 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void create_EndBeforeStart_ThrowsConflictException() {
+        NewBookingRequest request = newBookingRequest(
+                item.getId(),
+                LocalDateTime.now().plusDays(2),
+                LocalDateTime.now().plusDays(1)
+        );
+
+        assertThatThrownBy(() -> bookingService.create(booker.getId(), request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Дата окончания должна быть позже даты начала");
+    }
+
+    @Test
+    void create_EndEqualsStart_ThrowsConflictException() {
+        LocalDateTime date = LocalDateTime.now().plusDays(1);
+
+        NewBookingRequest request = newBookingRequest(
+                item.getId(),
+                date,
+                date
+        );
+
+        assertThatThrownBy(() -> bookingService.create(booker.getId(), request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Дата окончания должна быть позже даты начала");
+    }
+
+    @Test
     void update_ApproveByOwner_SetsApprovedStatus() {
         BookingDto created = bookingService.create(booker.getId(), newBookingRequest(item.getId(),
                 LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2)));
@@ -164,6 +192,167 @@ class BookingServiceImplTest {
                 LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2)));
 
         List<BookingDto> result = bookingService.findByOwner(owner.getId(), State.ALL);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findByOwner_CurrentState_ReturnsCurrentBookings() {
+        bookingService.create(
+                booker.getId(),
+                newBookingRequest(
+                        item.getId(),
+                        LocalDateTime.now().minusHours(1),
+                        LocalDateTime.now().plusHours(1)
+                )
+        );
+
+        List<BookingDto> result = bookingService.findByOwner(
+                owner.getId(), State.CURRENT
+        );
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findByOwner_PastState_ReturnsPastBookings() {
+        bookingService.create(
+                booker.getId(),
+                newBookingRequest(
+                        item.getId(),
+                        LocalDateTime.now().minusDays(2),
+                        LocalDateTime.now().minusDays(1)
+                )
+        );
+
+        List<BookingDto> result = bookingService.findByOwner(
+                owner.getId(), State.PAST
+        );
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findByOwner_FutureState_ReturnsFutureBookings() {
+        bookingService.create(
+                booker.getId(),
+                newBookingRequest(
+                        item.getId(),
+                        LocalDateTime.now().plusDays(1),
+                        LocalDateTime.now().plusDays(2)
+                )
+        );
+
+        List<BookingDto> result = bookingService.findByOwner(
+                owner.getId(), State.FUTURE
+        );
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findByOwner_WaitingState_ReturnsWaitingBookings() {
+        bookingService.create(
+                booker.getId(),
+                newBookingRequest(
+                        item.getId(),
+                        LocalDateTime.now().plusDays(1),
+                        LocalDateTime.now().plusDays(2)
+                )
+        );
+
+        List<BookingDto> result = bookingService.findByOwner(
+                owner.getId(), State.WAITING
+        );
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findByOwner_RejectedState_ReturnsRejectedBookings() {
+        BookingDto created = bookingService.create(
+                booker.getId(),
+                newBookingRequest(
+                        item.getId(),
+                        LocalDateTime.now().plusDays(1),
+                        LocalDateTime.now().plusDays(2)
+                )
+        );
+
+        bookingService.update(owner.getId(), created.getId(), false);
+
+        List<BookingDto> result = bookingService.findByOwner(
+                owner.getId(), State.REJECTED
+        );
+
+        assertThat(result).hasSize(1);
+    }
+
+    //getByState()
+    @Test
+    void findByCurrentUser_CurrentState_ReturnsCurrentBookings() {
+        bookingService.create(booker.getId(), newBookingRequest(
+                item.getId(),
+                LocalDateTime.now().minusHours(1),
+                LocalDateTime.now().plusHours(1)
+        ));
+
+        List<BookingDto> result = bookingService.findByCurrentUser(
+                booker.getId(), State.CURRENT
+        );
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findByCurrentUser_PastState_ReturnsPastBookings() {
+        bookingService.create(booker.getId(), newBookingRequest(
+                item.getId(),
+                LocalDateTime.now().minusDays(2),
+                LocalDateTime.now().minusDays(1)
+        ));
+
+        List<BookingDto> result = bookingService.findByCurrentUser(
+                booker.getId(), State.PAST
+        );
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findByCurrentUser_RejectedState_ReturnsRejectedBookings() {
+        BookingDto created = bookingService.create(
+                booker.getId(),
+                newBookingRequest(
+                        item.getId(),
+                        LocalDateTime.now().plusDays(1),
+                        LocalDateTime.now().plusDays(2)
+                )
+        );
+
+        bookingService.update(owner.getId(), created.getId(), false);
+
+        List<BookingDto> result = bookingService.findByCurrentUser(
+                booker.getId(), State.REJECTED
+        );
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findByCurrentUser_AllState_ReturnsAllBookings() {
+        bookingService.create(
+                booker.getId(),
+                newBookingRequest(
+                        item.getId(),
+                        LocalDateTime.now().plusDays(1),
+                        LocalDateTime.now().plusDays(2)
+                )
+        );
+
+        List<BookingDto> result = bookingService.findByCurrentUser(
+                booker.getId(), State.ALL
+        );
 
         assertThat(result).hasSize(1);
     }

@@ -174,6 +174,26 @@ class ItemServiceImplTest {
         assertThat(result.getComments().get(0).getText()).isEqualTo("Великолепная вещь!");
     }
 
+    @Test
+    void findAll_ReturnsAllItems() {
+        List<ItemDto> result = itemService.findAll();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(item.getId());
+        assertThat(result.get(0).getName()).isEqualTo("Дрель");
+        assertThat(result.get(0).getDescription()).isEqualTo("Новая дрель");
+        assertThat(result.get(0).isAvailable()).isTrue();
+    }
+
+    @Test
+    void findAll_WhenNoItems_ReturnsEmptyList() {
+        itemRepository.deleteAll();
+
+        List<ItemDto> result = itemService.findAll();
+
+        assertThat(result).isEmpty();
+    }
+
     // addComment
     @Test
     void addComment_UserHasPastApprovedBooking_Success() {

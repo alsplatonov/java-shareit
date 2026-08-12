@@ -72,6 +72,41 @@ class UserServiceImplTest {
     }
 
     @Test
+    void update_ChangeEmailToFreeEmail_UpdatesEmail() {
+        UserDto created = userService.create(
+                newUserRequest("old@test.com", "User")
+        );
+
+        UpdateUserRequest update = new UpdateUserRequest();
+        update.setId(created.getId());
+        update.setEmail("new@test.com");
+
+        UserDto result = userService.update(update);
+
+        assertThat(result.getEmail()).isEqualTo("new@test.com");
+        assertThat(result.getName()).isEqualTo("User");
+    }
+
+    @Test
+    void update_EmailOfAnotherUser_ThrowsConflictException() {
+        UserDto firstUser = userService.create(
+                newUserRequest("first@test.com", "First")
+        );
+
+        UserDto secondUser = userService.create(
+                newUserRequest("second@test.com", "Second")
+        );
+
+        UpdateUserRequest update = new UpdateUserRequest();
+        update.setId(firstUser.getId());
+        update.setEmail(secondUser.getEmail());
+
+        assertThatThrownBy(() -> userService.update(update))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Email уже существует");
+    }
+
+    @Test
     void findAll_ReturnsAllCreatedUsers() {
         userService.create(newUserRequest("u@test.com", "U1"));
         userService.create(newUserRequest("u2@test.com", "U2"));
@@ -119,6 +154,36 @@ class UserServiceImplTest {
         Optional<UserDto> result = userService.remove(9999L);
 
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void remove_ExistingUser_ReturnsRemovedUser() {
+        UserDto created = userService.create(
+                newUserRequest("user@test.com", "User")
+        );
+
+        Optional<UserDto> result = userService.remove(created.getId());
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getId()).isEqualTo(created.getId());
+        assertThat(result.get().getEmail()).isEqualTo("user@test.com");
+        assertThat(result.get().getName()).isEqualTo("User");
+    }
+
+    @Test
+    void remove_ExistingUser_DeletesUserAndReturnsIt() {
+        UserDto created = userService.create(
+                newUserRequest("user@test.com", "User")
+        );
+
+        Optional<UserDto> result = userService.remove(created.getId());
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getId()).isEqualTo(created.getId());
+        assertThat(result.get().getEmail()).isEqualTo("user@test.com");
+        assertThat(result.get().getName()).isEqualTo("User");
+
+        assertThat(userRepository.findById(created.getId())).isEmpty();
     }
 
     private NewUserRequest newUserRequest(String email, String name) {
